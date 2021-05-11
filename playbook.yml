@@ -105,5 +105,8 @@
         path: /etc/nginx/sites-enabled/phpmyadmin.conf
         regexp: 'substitutehere'
         replace: "{{ DOMAIN }}"
+        before
+
+
 
 
