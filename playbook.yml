@@ -1,0 +1,109 @@
+---
+- name: Install Nginx
+  hosts: all
+  become: yes
+
+  vars:
+    DOMAIN: justtest.test
+    mysql_root_password: qwerty
+  tasks:
+
+    - name: UFW allow ports
+      ufw:
+        state: enabled
+        rule: allow
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+      with_items:
+        - { port: 22, proto: any }
+        - { port: 25, proto: any }
+        - { port: 80, proto: any }
+        - { port: 443, proto: any }
+        - { port: 465, proto: any }
+        - { port: 857, proto: any }
+        - { port: 8080, proto: any }
+        - { port: '60000:65535', proto: tcp }
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: latest
+
+    - name: Install PHP
+      apt:
+        name:
+          - php7.4-cli
+          - php7.4-fpm
+          - php7.4-curl
+          - php7.4-gd
+          - php7.4-mysql
+          - php7.4-mbstring
+        state: latest
+
+    - name: Enable Nginx
+      systemd:
+        name: nginx
+        enabled: yes
+
+    - name: Delete directory
+      file:
+        state: absent
+        path: /etc/nginx/sites-enabled/default
+
+    - name: Create dir
+      file:
+        state: directory
+        path: /var/www/{{ DOMAIN }}
+
+    - name: Download config
+      get_url:
+        url: https://raw.githubusercontent.com/KillingNature/configs/main/default.conf
+        dest: /etc/nginx/sites-enabled/default.conf
+
+    - name: Create index.php
+      copy:
+        dest: "/var/www/{{ DOMAIN }}/index.php"
+        content: <?php phpinfo(); ?>
+
+    - name: Install MariaDB
+      apt:
+        name:
+         - mariadb-server
+         - python3-pymysql
+        state: latest
+
+
+    - name: Enable MariaDB
+      systemd:
+        name: mariadb
+        enabled: yes
+
+    - name: mysql_root_password
+      mysql_user:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        user: root
+        check_implicit_admin: true
+        password: "{{ mysql_root_password }}"
+        host: localhost
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Install phpmyadmin
+      apt:
+        name:
+          - php-mysql
+          - phpmyadmin
+        state: latest
+
+    - name: Download config
+      get_url:
+        url: https://raw.githubusercontent.com/KillingNature/configs/main/phpmyadmin.conf
+        dest: /etc/nginx/sites-enabled/phpmyadmin.conf
+
+    - name: Replace domain in phpmyadmin.conf
+      replace:
+        path: /etc/nginx/sites-enabled/phpmyadmin.conf
+        regexp: 'substitutehere'
+        replace: "{{ DOMAIN }}"
+
+
