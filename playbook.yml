@@ -117,7 +117,7 @@
       replace:
         path: /etc/nginx/sites-enabled/phpmyadmin.conf
         regexp: 'substitutehere'
-        replace: "{{ DOMAIN }}"
+        replace: php.{{ DOMAIN }}
 
     - name: Add default username and password for MySQL connection.
       lineinfile: >
@@ -168,6 +168,10 @@
       with_items:
         - nginx
         - php7.4-fpm
+
+    - name: Install proftpd
+      apt:
+        name: proftpd
 
 
 
