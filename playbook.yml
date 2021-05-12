@@ -6,7 +6,20 @@
   vars:
     DOMAIN: justtest.test
     mysql_root_password: qwerty
+    phpmyadmin_mysql_host: localhost
+    phpmyadmin_mysql_port: ""
+    phpmyadmin_mysql_socket: ""
+    phpmyadmin_mysql_connect_type: tcp
+    phpmyadmin_mysql_user: root
+    phpmyadmin_mysql_password: "{{ mysql_root_password }}"
+    phpmyadmin_config_file: /etc/phpmyadmin/config.inc.php
+
   tasks:
+
+    - name: Debug
+      debug:
+        msg: "{{ansible_default_ipv4.address}}"
+
 
     - name: UFW allow ports
       ufw:
@@ -105,6 +118,58 @@
         path: /etc/nginx/sites-enabled/phpmyadmin.conf
         regexp: 'substitutehere'
         replace: "{{ DOMAIN }}"
+
+    - name: Add default username and password for MySQL connection.
+      lineinfile: >
+        dest={{ phpmyadmin_config_file }}
+        state=present
+        regexp="^.+\['{{ item.key }}'\].+$"
+        line="$cfg['Servers'][$i]['{{ item.key }}'] = '{{ item.value }}';"
+        insertbefore="^\?>"
+        mode=0644
+      with_items:
+        - key: host
+          value: "{{ phpmyadmin_mysql_host }}"
+        - key: port
+          value: "{{ phpmyadmin_mysql_port }}"
+        - key: socket
+          value: "{{ phpmyadmin_mysql_socket }}"
+        - key: connect_type
+          value: "{{ phpmyadmin_mysql_connect_type }}"
+        - key: user
+          value: "{{ phpmyadmin_mysql_user }}"
+        - key: password
+          value: "{{ phpmyadmin_mysql_password }}"
+
+
+
+
+    - name: Build hosts file
+      lineinfile:
+        dest: /etc/hosts
+        insertbefore: BOF
+        line: "{{ ansible_default_ipv4.address }} {{ DOMAIN }}"
+
+    - name: Replace domain in default.conf
+      replace:
+        path: /etc/nginx/sites-enabled/default.conf
+        regexp: 'substitutehere'
+        replace: "{{ DOMAIN }}"
+
+    - name: Enable Nginx
+      systemd:
+        name: nginx
+        state: reloaded
+
+    - name: Reload nginx and fpm
+      service:
+        name: "{{ item }}"
+        state: reloaded
+      with_items:
+        - nginx
+        - php7.4-fpm
+
+
 
 
 
