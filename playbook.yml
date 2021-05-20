@@ -4,7 +4,7 @@
   become: yes
 
   vars:
-    DOMAIN: justtest.test
+    DOMAIN: justtest.w
     mysql_root_password: qwerty
     phpmyadmin_mysql_host: localhost
     phpmyadmin_mysql_port: ""
@@ -28,6 +28,8 @@
         port: "{{ item.port }}"
         proto: "{{ item.proto }}"
       with_items:
+        - { port: 20, proto: any }
+        - { port: 21, proto: any }
         - { port: 22, proto: any }
         - { port: 25, proto: any }
         - { port: 80, proto: any }
@@ -172,6 +174,8 @@
     - name: Install proftpd
       apt:
         name: proftpd
+        state: latest
+
 
 
 
